@@ -1,13 +1,15 @@
+
 const express = require("express");
 const logger = require("morgan");
+require("dotenv").config();
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
 const mongoose = require("mongoose");
-require("dotenv").config();
+
 
 const PORT = process.env.PORT || 3000;
-const FRONTEND_URL = process.env.ORIGIN || "http://localhost:3000";
-const connection = process.env.connection || "mongodb://127.0.0.1:27017/shareX";
+const FRONTEND_URL = process.env.ORIGIN || "http://localhost:5173";
+const connection = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/shareX";
 
 // Initialize Express app
 const app = express();
@@ -21,6 +23,7 @@ app.use(cookieParser());
 app.use(
   cors({
     origin: [FRONTEND_URL],
+    credentials: true // if you're using cookies or sessions
   })
 );
 
@@ -31,11 +34,13 @@ mongoose
   .catch(err => console.error("Error connecting to MongoDB", err));
 
 // Models
-const carModel = require("./models/Car.model");
+const CarModel = require("./models/Car.model");
+// Remove this line as we're no longer using a separate Review model
+// const ReviewModel = require("./models/Review.model");
 
 // Routes
-const authroutes = require("./routes/auth.routes");
-app.use('/auth', authroutes);
+const authRoutes = require("./routes/auth.routes");
+app.use('/auth', authRoutes);
 
 const userRoute = require("./routes/user.routes");
 app.use('/user', userRoute);
@@ -43,13 +48,29 @@ app.use('/user', userRoute);
 const carRoute = require("./routes/car.routes");
 app.use('/car', carRoute);
 
+// Update this to use the car routes for reviews
+// const reviewRoute = require("./routes/review.routes");
+// app.use('/review', reviewRoute)
+
 // Our first route
 app.get('/', (request, response, next) => {
-  console.log(request);
-  response.send('<h1>Welcome to ShareX Car rental. :)</h1>');
+  response.send("Welcome to ShareX Car rental");
+});
+
+// Not found handler
+app.use((req, res, next) => {
+  res.status(404).send("Sorry, can't find that!");
+});
+
+// Error handler
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).send('Something broke!');
 });
 
 // Start the server
 app.listen(PORT, () => {
-  console.log(`Listening on port ${PORT}!`);
+  console.log(`Server is running on port ${PORT}`);
 });
+
+module.exports = app; // Export for testing purposes
